@@ -1,0 +1,29 @@
+name: Semgrep
+
+on: [push, pull_request]
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: semgrep scan --config auto --config .semgrep/ --sarif --output semgrep-results.sarif
+        continue-on-error: true
+
+      - name: Print summary
+        if: always()
+        run: python3 .scripts/summarize_sarif.py semgrep-results.sarif csharp.lang.security.sqli.csharp-sqli.csharp-sqli
+
+      - name: Upload results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep-results.sarif
+        continue-on-error: true
