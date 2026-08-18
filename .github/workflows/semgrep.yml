@@ -19,7 +19,7 @@ jobs:
 
       - name: Print summary
         if: always()
-        run: python3 .scripts/summarize_sarif.py semgrep-results.sarif csharp.lang.security.sqli.csharp-sqli.csharp-sqli
+        run: python3 .scripts/summarize_sarif.py semgrep-results.sarif csharp.lang.security.sqli.csharp-sqli.csharp-sqli semgrep.efcore-raw-sql-non-parameterized
 
       - name: Upload results to Security tab
         if: always()
