@@ -1,0 +1,31 @@
+rules:
+  - id: xxe-dtd-processing-enabled
+    languages: [csharp]
+    severity: ERROR
+    message: >
+      DTD processing is explicitly enabled (DtdProcessing.Parse) when reading
+      XML. If the XML content is untrusted, this allows external entity
+      resolution (XXE -- arbitrary file disclosure or SSRF) and/or
+      denial-of-service via entity expansion, even if XmlResolver is
+      otherwise null. Use DtdProcessing.Prohibit (the safe default) unless
+      DTDs are genuinely required and the source is trusted.
+    patterns:
+      - pattern: DtdProcessing.Parse
+
+  - id: xxe-xmlresolver-enabled
+    languages: [csharp]
+    severity: ERROR
+    message: >
+      XmlResolver explicitly set to a non-null value, re-enabling external
+      entity/DTD resolution during XML parsing. If the XML being parsed is
+      untrusted, this is an XXE (XML External Entity) vulnerability. Leave
+      XmlResolver unset (null is the safe default) unless external
+      resolution is genuinely required and the source is trusted.
+    patterns:
+      - pattern-either:
+          - pattern: $X.XmlResolver = $VAL
+          - pattern: new $T { ..., XmlResolver = $VAL, ... }
+      - metavariable-pattern:
+          metavariable: $VAL
+          patterns:
+            - pattern-not: "null"

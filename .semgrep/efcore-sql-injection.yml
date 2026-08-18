@@ -1,0 +1,19 @@
+rules:
+  - id: efcore-raw-sql-non-parameterized
+    languages: [csharp]
+    severity: ERROR
+    message: >
+      Non-literal string passed to an EF Core raw-SQL API (FromSqlRaw /
+      SqlQueryRaw / ExecuteSqlRaw / ExecuteSqlRawAsync). If this string is
+      built from concatenation or interpolation of external input, this is
+      SQL injection. Use FromSqlInterpolated or a parameterized query instead.
+    patterns:
+      - pattern-either:
+          - pattern: $X.Database.ExecuteSqlRaw($SQL, ...)
+          - pattern: $X.Database.ExecuteSqlRawAsync($SQL, ...)
+          - pattern: $X.Database.SqlQueryRaw<$T>($SQL, ...)
+          - pattern: $X.FromSqlRaw($SQL, ...)
+      - metavariable-pattern:
+          metavariable: $SQL
+          patterns:
+            - pattern-not: "\"...\""

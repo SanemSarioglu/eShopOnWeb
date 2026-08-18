@@ -1,0 +1,25 @@
+rules:
+  - id: unsanitized-file-path-argument
+    languages: [csharp]
+    severity: ERROR
+    message: >
+      Non-literal path passed to a file-system API (File.Exists / File.Delete /
+      File.ReadAllText / File.ReadAllBytes / File.WriteAllText /
+      File.WriteAllBytes / XDocument.Load). If this path is built from
+      concatenation or interpolation of external input, this is path traversal.
+      Validate the input (e.g. reject "..", use Path.GetFileName, or verify the
+      resolved path stays within the intended directory) before using it in a
+      file-system operation.
+    patterns:
+      - pattern-either:
+          - pattern: File.Exists($PATH)
+          - pattern: File.Delete($PATH)
+          - pattern: File.ReadAllText($PATH)
+          - pattern: File.ReadAllBytes($PATH)
+          - pattern: File.WriteAllText($PATH, ...)
+          - pattern: File.WriteAllBytes($PATH, ...)
+          - pattern: XDocument.Load($PATH)
+      - metavariable-pattern:
+          metavariable: $PATH
+          patterns:
+            - pattern-not: "\"...\""
