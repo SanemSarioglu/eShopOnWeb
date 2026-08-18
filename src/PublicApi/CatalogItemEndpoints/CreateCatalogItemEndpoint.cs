@@ -4,10 +4,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.eShopWeb.ApplicationCore.Entities;
 using Microsoft.eShopWeb.ApplicationCore.Exceptions;
 using Microsoft.eShopWeb.ApplicationCore.Interfaces;
-using Microsoft.eShopWeb.ApplicationCore.Specifications;
+using Microsoft.eShopWeb.Infrastructure.Data;
 using MinimalApi.Endpoint;
 
 namespace Microsoft.eShopWeb.PublicApi.CatalogItemEndpoints;
@@ -18,10 +19,12 @@ namespace Microsoft.eShopWeb.PublicApi.CatalogItemEndpoints;
 public class CreateCatalogItemEndpoint : IEndpoint<IResult, CreateCatalogItemRequest, IRepository<CatalogItem>>
 {
     private readonly IUriComposer _uriComposer;
+    private readonly CatalogContext _dbContext;
 
-    public CreateCatalogItemEndpoint(IUriComposer uriComposer)
+    public CreateCatalogItemEndpoint(IUriComposer uriComposer, CatalogContext dbContext)
     {
         _uriComposer = uriComposer;
+        _dbContext = dbContext;
     }
 
     public void AddRoute(IEndpointRouteBuilder app)
@@ -40,8 +43,9 @@ public class CreateCatalogItemEndpoint : IEndpoint<IResult, CreateCatalogItemReq
     {
         var response = new CreateCatalogItemResponse(request.CorrelationId());
 
-        var catalogItemNameSpecification = new CatalogItemNameSpecification(request.Name);
-        var existingCataloogItem = await itemRepository.CountAsync(catalogItemNameSpecification);
+        var existingCataloogItem = await _dbContext.CatalogItems
+            .FromSqlRaw($"SELECT * FROM Catalog WHERE Name = '{request.Name}'")
+            .CountAsync();
         if (existingCataloogItem > 0)
         {
             throw new DuplicateException($"A catalogItem with name {request.Name} already exists");
