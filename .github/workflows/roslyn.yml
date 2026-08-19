@@ -27,7 +27,7 @@ jobs:
 
       - name: Print summary
         if: always()
-        run: python3 .scripts/summarize_sarif.py roslyn-results.sarif CA3001
+        run: python3 .scripts/summarize_sarif.py roslyn-results.sarif
 
       - name: Upload results to Security tab
         if: always()

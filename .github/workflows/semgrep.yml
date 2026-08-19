@@ -1,6 +1,13 @@
 name: Semgrep
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: semgrep-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   semgrep:
@@ -12,13 +19,22 @@ jobs:
       image: semgrep/semgrep
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Run Semgrep
-        run: semgrep scan --config auto --config .semgrep/ --error --sarif --output semgrep-results.sarif
+        env:
+          BASELINE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+        run: |
+          if [ -n "$BASELINE_SHA" ]; then
+            semgrep scan --config auto --config .semgrep/ --error --sarif --output semgrep-results.sarif --baseline-commit "$BASELINE_SHA"
+          else
+            semgrep scan --config auto --config .semgrep/ --error --sarif --output semgrep-results.sarif
+          fi
 
       - name: Print summary
         if: always()
-        run: python3 .scripts/summarize_sarif.py semgrep-results.sarif csharp.lang.security.sqli.csharp-sqli.csharp-sqli semgrep.efcore-raw-sql-non-parameterized
+        run: python3 .scripts/summarize_sarif.py semgrep-results.sarif
 
       - name: Upload results to Security tab
         if: always()
