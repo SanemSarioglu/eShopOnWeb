@@ -61,17 +61,17 @@ namespace EfCoreSqlAnalyzer
 
             ExpressionSyntax sqlArgument = arguments[0].Expression;
 
-            if (IsStringLiteral(sqlArgument))
+            if (IsCompileTimeConstantString(context.SemanticModel, sqlArgument))
                 return;
 
             var diagnostic = Diagnostic.Create(Rule, invocation.GetLocation(), methodName);
             context.ReportDiagnostic(diagnostic);
         }
 
-        private static bool IsStringLiteral(ExpressionSyntax expression)
+        private static bool IsCompileTimeConstantString(SemanticModel semanticModel, ExpressionSyntax expression)
         {
-            return expression is LiteralExpressionSyntax literal
-                   && literal.IsKind(SyntaxKind.StringLiteralExpression);
+            var constantValue = semanticModel.GetConstantValue(expression);
+            return constantValue.HasValue && constantValue.Value is string;
         }
     }
 }
