@@ -23,7 +23,6 @@ jobs:
           -p:AnalysisLevel=latest
           -p:AnalysisMode=AllEnabledByDefault
           -p:TreatWarningsAsErrors=false
-        continue-on-error: true
 
       - name: Print summary
         if: always()
