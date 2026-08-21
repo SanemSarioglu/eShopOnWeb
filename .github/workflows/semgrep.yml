@@ -26,11 +26,16 @@ jobs:
         env:
           BASELINE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
         run: |
-          if [ -n "$BASELINE_SHA" ]; then
-            semgrep scan --config auto --config .semgrep/ --error --sarif --output semgrep-results.sarif --baseline-commit "$BASELINE_SHA"
-          else
-            semgrep scan --config auto --config .semgrep/ --error --sarif --output semgrep-results.sarif
-          fi
+          # Diff-aware scanning temporarily disabled: doing a full scan every
+          # run for now so new/changed rules are validated against the whole
+          # repo in CI, not just the files touched by a given PR. Re-enable
+          # once we've confirmed a few new rules work end-to-end.
+          # if [ -n "$BASELINE_SHA" ]; then
+          #   semgrep scan --config auto --config .semgrep/ --error --sarif --output semgrep-results.sarif --baseline-commit "$BASELINE_SHA"
+          # else
+          #   semgrep scan --config auto --config .semgrep/ --error --sarif --output semgrep-results.sarif
+          # fi
+          semgrep scan --config auto --config .semgrep/ --error --sarif --output semgrep-results.sarif
 
       - name: Print summary
         if: always()

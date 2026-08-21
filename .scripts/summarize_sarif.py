@@ -46,19 +46,21 @@ def result_location(result):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: summarize_sarif.py <sarif-file>")
+    if len(sys.argv) < 2:
+        print("Usage: summarize_sarif.py <sarif-file> [<sarif-file> ...]")
         sys.exit(1)
 
-    sarif_file = sys.argv[1]
-    try:
-        run = load_run(sarif_file)
-    except FileNotFoundError:
-        print(f"{sarif_file} not found, skipping")
-        return
-
-    results = run.get("results", [])
-    rule_index = build_rule_index(run)
+    sarif_files = sys.argv[1:]
+    results = []
+    rule_index = {}
+    for sarif_file in sarif_files:
+        try:
+            run = load_run(sarif_file)
+        except FileNotFoundError:
+            print(f"{sarif_file} not found, skipping")
+            continue
+        results.extend(run.get("results", []))
+        rule_index.update(build_rule_index(run))
 
     counts = Counter(r["ruleId"] for r in results)
     by_rule = defaultdict(list)

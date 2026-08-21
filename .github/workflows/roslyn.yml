@@ -1,6 +1,13 @@
 name: Roslyn Built-in Analysis
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: roslyn-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   roslyn:
@@ -16,14 +23,24 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      # Every project in the solution writes its own SARIF file. MSBuild's
+      # SARIF logger overwrites rather than appends, so if every project
+      # shared one fixed /p:ErrorLog path, only whichever project finished
+      # last would survive in the final file -- every earlier project's
+      # diagnostics would be silently lost. See Directory.Build.props for
+      # how RoslynSarifOutputDir routes each project to its own file.
       - name: Build with analyzers
-        run: >
-          dotnet build ./eShopOnWeb.sln
-          "/p:ErrorLog=${{ github.workspace }}/roslyn-results.sarif%2Cversion=2.1"
-          -p:AnalysisLevel=latest
-          -p:AnalysisMode=AllEnabledByDefault
-          -p:TreatWarningsAsErrors=false
-        continue-on-error: true
+        run: |
+          mkdir -p roslyn-results
+          dotnet build ./eShopOnWeb.sln \
+            -p:RoslynSarifOutputDir=${{ github.workspace }}/roslyn-results \
+            -p:AnalysisLevel=latest \
+            -p:AnalysisMode=AllEnabledByDefault \
+            -p:TreatWarningsAsErrors=false
+
+      - name: Merge per-project SARIF files
+        if: always()
+        run: python3 .scripts/merge_sarif.py roslyn-results.sarif roslyn-results/*.sarif
 
       - name: Print summary
         if: always()

@@ -1,0 +1,18 @@
+<Project>
+  <!--
+    Used by .github/workflows/roslyn.yml. When building a whole solution,
+    every project's compiler invocation writes to the /p:ErrorLog path
+    individually, and since MSBuild's SARIF logger overwrites rather than
+    appends, giving every project the same fixed path means only whichever
+    project finishes last "wins": every earlier project's diagnostics are
+    silently lost. Routing each project to its own file (named after the
+    project) avoids that, at the cost of the workflow then needing to read
+    and merge every file in the output directory instead of just one.
+    Only takes effect when RoslynSarifOutputDir is explicitly passed in
+    (for example RoslynSarifOutputDir=some/path), so it has no effect on a
+    normal local or CI build that doesn't set it.
+  -->
+  <PropertyGroup Condition="'$(RoslynSarifOutputDir)' != ''">
+    <ErrorLog>$(RoslynSarifOutputDir)/$(MSBuildProjectName).sarif,version=2.1</ErrorLog>
+  </PropertyGroup>
+</Project>
