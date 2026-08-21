@@ -1,0 +1,39 @@
+rules:
+  - id: efcore-raw-sql-tainted-by-request
+    mode: taint
+    languages: [csharp]
+    severity: ERROR
+    message: >
+      A value read from an incoming request reaches an EF Core raw-SQL API
+      (FromSqlRaw / ExecuteSqlRaw) without ever being sanitized or
+      parameterized. This is a confirmed, exploitable SQL injection path,
+      not just a "this string isn't a literal" heuristic -- semgrep traced
+      the actual flow from the request property to the raw-SQL call. Use
+      FromSqlInterpolated or pass the value as a separate parameter instead.
+    pattern-sources:
+      - patterns:
+          - pattern: $REQ.$PROP
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ".*[Rr]equest.*"
+      # Semgrep OSS's taint tracking doesn't follow a value across function
+      # calls, so a generic, reusable data-access method like this one can't
+      # have its parameter's real origin traced automatically. It's declared
+      # as a source by hand instead: treat anything passed into it as
+      # untrusted, since any future caller could pass it request data.
+      # This has to be updated by hand for each new generic method like it --
+      # it is not automatic.
+      - patterns:
+          - pattern-inside: |
+              public async Task<List<T>> SearchByNameAsync(string $NAME)
+              {
+                ...
+              }
+          - pattern: $NAME
+    pattern-sinks:
+      - pattern: $CTX.FromSqlRaw($SQL, ...)
+      - pattern: $CTX.SqlQueryRaw($SQL, ...)
+      - pattern: $CTX.ExecuteSqlRaw($SQL, ...)
+      - pattern: $CTX.ExecuteSqlRawAsync($SQL, ...)
+    pattern-sanitizers:
+      - pattern: FromSqlInterpolated(...)
