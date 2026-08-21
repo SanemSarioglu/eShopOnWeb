@@ -30,12 +30,13 @@ jobs:
       # diagnostics would be silently lost. See Directory.Build.props for
       # how RoslynSarifOutputDir routes each project to its own file.
       - name: Build with analyzers
-        run: >
-          dotnet build ./eShopOnWeb.sln
-          -p:RoslynSarifOutputDir=${{ github.workspace }}/roslyn-results
-          -p:AnalysisLevel=latest
-          -p:AnalysisMode=AllEnabledByDefault
-          -p:TreatWarningsAsErrors=false
+        run: |
+          mkdir -p roslyn-results
+          dotnet build ./eShopOnWeb.sln \
+            -p:RoslynSarifOutputDir=${{ github.workspace }}/roslyn-results \
+            -p:AnalysisLevel=latest \
+            -p:AnalysisMode=AllEnabledByDefault \
+            -p:TreatWarningsAsErrors=false
 
       - name: Merge per-project SARIF files
         if: always()
